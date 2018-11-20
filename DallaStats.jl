@@ -1,3 +1,6 @@
+"""
+Functions related to Dalla Stats
+"""
 module DallaStats
 import Dates
 using MySQL
@@ -46,16 +49,22 @@ function calculate_row_delta(prev_row, current_row)
     delta
 end
 
+
+function calculate_delta_month(conn, month)
+    start = month_local_unix_time(month)
+    calculate_delta(conn, start)
+end
+
 """
-    calculate_delta(conn, month)
+    calculate_delta(conn, timestamp)
 
 Return the history table after calculating delta values
 """
-function calculate_delta(conn, month)
-    start = month_local_unix_time(month)
+function calculate_delta(conn, timestamp)
+    
 
-    println("Fetching history table rows after ", Dates.unix2datetime(start), " UTC")
-    history = MySQL.query(conn, """SELECT * FROM history WHERE record_time >= $start;""", DataFrame)
+    println("Fetching history table rows after ", Dates.unix2datetime(timestamp), " UTC")
+    history = MySQL.query(conn, """SELECT * FROM history WHERE record_time >= $timestamp;""", DataFrame)
 
     delete!(history, :ip_address)
     device_ids = unique(history[:device_id])
@@ -108,12 +117,21 @@ function update_device_table(conn, device_df)
 end
 
 function update_device_table(conn, month::Integer)
-    delta_df = calculate_delta(conn, month)
+    delta_df = calculate_delta_month(conn, month)
     device_df = create_device_table(delta_df)
     update_device_table(conn, device_df)
 
     new_table = MySQL.query(conn, """SELECT * FROM device;""", DataFrame)
     println(new_table)
+end
+
+"""
+    get_all_device_usage(conn, minutes)
+
+Calculate how much each device has used in the past x minutes
+"""
+function get_all_device_usage(conn, minutes)
+    calculate_delta(conn, )
 end
 
 end
